@@ -1068,7 +1068,7 @@ def run(k,aut):
 
 
 
-TOKEN_LIMIT = 15
+TOKEN_LIMIT = 5
 
 
 # -----------------------
