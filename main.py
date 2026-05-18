@@ -424,9 +424,9 @@ def home():
 def useragent():
 	return user_agent.generate_user_agent()
 
-proxy = "proxy.wtvconfigs.run.place:8069"
-user = "6443633962"
-password = "9lvlvpubIOWb7ziK"
+proxy = "proxy.geonode.io:9000"
+user = "geonode_rQPeUhXDlo-type-residential"
+password = "aa4c72dc-f4fa-4a68-9606-7de705637084"
 
 proxies = {
     "http": f"http://{user}:{password}@{proxy}",
