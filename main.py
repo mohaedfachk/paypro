@@ -1068,7 +1068,7 @@ def run(k,aut):
 
 
 
-TOKEN_LIMIT = 5
+TOKEN_LIMIT = 15
 
 
 # -----------------------
@@ -1137,7 +1137,7 @@ def calc():
         "amount": "5$",
         "gateway": "Shop2Game",
         "result": result,
-        "token_used": state["token"]
+
     })
 
 
