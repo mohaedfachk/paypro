@@ -640,7 +640,7 @@ def typecard(cc):
 
 def run(k):
 	pu=('3477906171','1666397772','2114383021','2114383021','2828550589','2828550589')
-	aua=('sand-9a3baa083ca31f23c583ec61fa0abdbb668016d496b47d7890b69c5438562f8f','sand-14179121a6a895868bb9652ca0d798b8d33cc8b354132a3dac4de0ac78b1cfb6')
+	aua=('sand-14179121a6a895868bb9652ca0d798b8d33cc8b354132a3dac4de0ac78b1cfb6')
 	aut=random.choices(aua)[0]
 	playeruuid=random.choices(pu)[0]
 	uag=useragent()
