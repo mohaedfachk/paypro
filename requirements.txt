@@ -1,6 +1,4 @@
 flask
 requests
-
-
-user_agent 
-
+beautifulsoup4
+user-agent
