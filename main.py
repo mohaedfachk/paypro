@@ -425,8 +425,8 @@ def useragent():
 	return user_agent.generate_user_agent()
 
 proxy = "proxy.geonode.io:9000"
-user = "geonode_rQPeUhXDlo-type-residential"
-password = "aa4c72dc-f4fa-4a68-9606-7de705637084"
+user = "geonode_uRNuT13e50-type-residential"
+password = "d036a1a3-9d17-46a4-9510-e3752c6aa540"
 
 proxies = {
     "http": f"http://{user}:{password}@{proxy}",
