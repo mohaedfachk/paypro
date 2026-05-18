@@ -430,7 +430,7 @@ password = "d036a1a3-9d17-46a4-9510-e3752c6aa540"
 
 proxies = {
     "http": f"http://{user}:{password}@{proxy}",
-    "https": f"http://{user}:{password}@{proxy}"
+    "http": f"http://{user}:{password}@{proxy}"
 }
 
 
