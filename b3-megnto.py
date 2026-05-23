@@ -301,7 +301,7 @@ def chk(cc,exp,exy,cvc,uid,m):
 		return error
 	except:
 		pass
-	if 'authenticate_successful' in re or 'lookup_error' in re:
+	if 'authenticate_successful' in re or 'lookup_error' in re or 'authenticate_attempt_successful' in re:
 		pass
 	else:
 		return re.split('"status":')[1].split('"')[1]
